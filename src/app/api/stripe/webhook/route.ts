@@ -1,0 +1,31 @@
+import { NextResponse } from "next/server"
+import Stripe from "stripe"
+import { createAnonSupabaseClient } from "@/lib/supabase/server"
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-03-31.basil" })
+
+export async function POST(req: Request) {
+  const body = await req.text()
+  const sig = req.headers.get("stripe-signature")!
+
+  let event: Stripe.Event
+  try {
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
+  } catch {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
+  }
+
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.CheckoutSession
+    const quoteId = session.metadata?.quoteId
+    if (quoteId) {
+      const supabase = await createAnonSupabaseClient()
+      await supabase
+        .from("saved_quotes")
+        .update({ is_paid: true, stripe_session_id: session.id })
+        .eq("id", quoteId)
+    }
+  }
+
+  return NextResponse.json({ received: true })
+}
