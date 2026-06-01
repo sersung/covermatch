@@ -35,12 +35,17 @@ export default async function DashboardPage() {
   const { userId } = await auth()
   if (!userId) redirect("/sign-in")
 
+  type QuoteWithSegment = {
+    id: string; label: string | null; created_at: string; is_paid: boolean
+    input_data: Record<string, unknown>
+    insurance_segments: { name: string; slug: string; icon: string } | null
+  }
   const supabase = await createServerSupabaseClient()
   const { data: quotes } = await supabase
     .from("saved_quotes")
     .select("*, insurance_segments(name, slug, icon)")
     .eq("user_id", userId)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false }) as { data: QuoteWithSegment[] | null }
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10 space-y-8">
@@ -72,8 +77,8 @@ export default async function DashboardPage() {
       ) : (
         <div className="grid sm:grid-cols-2 gap-4">
           {quotes.map((quote) => {
-            const segment = quote.insurance_segments as { name: string; slug: string; icon: string } | null
-            const inputData = quote.input_data as Record<string, unknown>
+            const segment = quote.insurance_segments
+            const inputData = quote.input_data
 
             return (
               <Card key={quote.id} className="hover:shadow-md transition-shadow">
@@ -95,12 +100,12 @@ export default async function DashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="text-sm text-gray-600 space-y-1">
-                    {inputData.petAge && <div>Pet age: <strong>{inputData.petAge as string} yrs</strong></div>}
-                    {inputData.state && <div>State: <strong>{inputData.state as string}</strong></div>}
-                    {inputData.annualVetCost && (
+                    {!!inputData.petAge && <div>Pet age: <strong>{inputData.petAge as string} yrs</strong></div>}
+                    {!!inputData.state && <div>State: <strong>{inputData.state as string}</strong></div>}
+                    {!!inputData.annualVetCost && (
                       <div>Annual vet cost: <strong>${(inputData.annualVetCost as number).toLocaleString()}</strong></div>
                     )}
-                    {inputData.dimensionSlug && (
+                    {!!inputData.dimensionSlug && (
                       <div>Condition: <strong>{inputData.dimensionSlug as string}</strong></div>
                     )}
                   </div>

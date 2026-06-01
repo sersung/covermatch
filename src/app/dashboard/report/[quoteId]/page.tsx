@@ -12,20 +12,26 @@ export default async function ReportPage({ params }: Props) {
   const { userId } = await auth()
   if (!userId) redirect("/sign-in")
 
+  type QuoteRow = {
+    is_paid: boolean
+    insurance_segments: { name: string; icon: string } | null
+    input_data: Record<string, unknown>
+    result_snapshot: Array<Record<string, unknown>> | null
+  }
   const supabase = await createServerSupabaseClient()
   const { data: quote } = await supabase
     .from("saved_quotes")
     .select("*, insurance_segments(name, icon)")
     .eq("id", quoteId)
     .eq("user_id", userId)
-    .single()
+    .single() as { data: QuoteRow | null }
 
   if (!quote) redirect("/dashboard")
   if (!quote.is_paid) redirect(`/dashboard/checkout/${quoteId}`)
 
-  const segment = quote.insurance_segments as { name: string; icon: string } | null
-  const inputData = quote.input_data as Record<string, unknown>
-  const results = quote.result_snapshot as Array<Record<string, unknown>> | null
+  const segment = quote.insurance_segments
+  const inputData = quote.input_data
+  const results = quote.result_snapshot
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
@@ -44,16 +50,16 @@ export default async function ReportPage({ params }: Props) {
       <Card>
         <CardHeader><CardTitle className="text-lg">Your Profile</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-          {inputData.petAge && (
+          {!!inputData.petAge && (
             <div><div className="text-gray-400">Pet Age</div><div className="font-semibold">{inputData.petAge as string} years</div></div>
           )}
-          {inputData.state && (
+          {!!inputData.state && (
             <div><div className="text-gray-400">State</div><div className="font-semibold">{inputData.state as string}</div></div>
           )}
-          {inputData.annualVetCost && (
+          {!!inputData.annualVetCost && (
             <div><div className="text-gray-400">Annual Vet Cost</div><div className="font-semibold">${(inputData.annualVetCost as number).toLocaleString()}</div></div>
           )}
-          {inputData.dimensionSlug && (
+          {!!inputData.dimensionSlug && (
             <div><div className="text-gray-400">Condition</div><div className="font-semibold capitalize">{(inputData.dimensionSlug as string).replace(/-/g, " ")}</div></div>
           )}
         </CardContent>

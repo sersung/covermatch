@@ -32,12 +32,13 @@ export async function POST(req: Request) {
   const { data, error } = await supabase
     .from("saved_quotes")
     .insert({
-      user_id: userId,
-      segment_id: segmentId,
-      input_data: inputData,
-      result_snapshot: resultSnapshot ?? null,
-      label: label ?? null,
+      user_id: userId as string,
+      segment_id: segmentId as string,
+      input_data: inputData as import("@/lib/types/database").Json,
+      result_snapshot: (resultSnapshot ?? null) as import("@/lib/types/database").Json | null,
+      label: (label ?? null) as string | null,
       is_paid: false,
+      stripe_session_id: null,
     })
     .select()
     .single()

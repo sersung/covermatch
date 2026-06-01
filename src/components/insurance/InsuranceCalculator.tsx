@@ -134,7 +134,7 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
           <Slider
             min={1} max={15} step={1}
             value={[petAge]}
-            onValueChange={([v]) => setPetAge(v)}
+            onValueChange={(v) => setPetAge(Array.isArray(v) ? v[0] : v)}
           />
         </div>
 
@@ -143,13 +143,13 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
           <Slider
             min={200} max={8000} step={100}
             value={[annualVetCost]}
-            onValueChange={([v]) => setAnnualVetCost(v)}
+            onValueChange={(v) => setAnnualVetCost(Array.isArray(v) ? v[0] : v)}
           />
         </div>
 
         <div className="space-y-2">
           <Label>State</Label>
-          <Select value={state} onValueChange={setState}>
+          <Select value={state} onValueChange={(v) => { if (v) setState(v) }}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>

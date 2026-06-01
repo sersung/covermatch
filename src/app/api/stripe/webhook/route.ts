@@ -3,7 +3,7 @@ import Stripe from "stripe"
 import { createClient } from "@supabase/supabase-js"
 import type { Database } from "@/lib/types/database"
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-03-31.basil" })
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-05-27.dahlia" })
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   }
 
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.CheckoutSession
+    const session = event.data.object as Stripe.Checkout.Session
     const quoteId = session.metadata?.quoteId
     if (quoteId) {
       // Service role bypasses RLS — required for webhook (no user JWT available)

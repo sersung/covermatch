@@ -76,31 +76,37 @@ export interface Database {
         Row: InsuranceSegmentRow
         Insert: Omit<InsuranceSegmentRow, 'id'>
         Update: Partial<Omit<InsuranceSegmentRow, 'id'>>
+        Relationships: []
       }
       providers: {
         Row: ProviderRow
         Insert: Omit<ProviderRow, 'id'>
         Update: Partial<Omit<ProviderRow, 'id'>>
+        Relationships: []
       }
       plans: {
         Row: PlanRow
         Insert: Omit<PlanRow, 'id'>
         Update: Partial<Omit<PlanRow, 'id'>>
+        Relationships: []
       }
       segment_dimensions: {
         Row: SegmentDimensionRow
         Insert: Omit<SegmentDimensionRow, 'id'>
         Update: Partial<Omit<SegmentDimensionRow, 'id'>>
+        Relationships: []
       }
       plan_coverage_rules: {
         Row: PlanCoverageRuleRow
         Insert: Omit<PlanCoverageRuleRow, 'id'>
         Update: Partial<Omit<PlanCoverageRuleRow, 'id'>>
+        Relationships: []
       }
       saved_quotes: {
         Row: SavedQuoteRow
         Insert: Omit<SavedQuoteRow, 'id' | 'created_at'>
         Update: Partial<Omit<SavedQuoteRow, 'id' | 'created_at'>>
+        Relationships: []
       }
     }
     Views: Record<string, never>

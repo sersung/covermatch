@@ -13,7 +13,7 @@ export default function ClerkNavAuth() {
         <Link href="/dashboard">
           <Button variant="ghost" size="sm">My Quotes</Button>
         </Link>
-        <UserButton afterSignOutUrl="/" />
+        <UserButton />
       </>
     )
   }

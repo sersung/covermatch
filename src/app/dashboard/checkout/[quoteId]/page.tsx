@@ -13,18 +13,19 @@ export default async function CheckoutPage({ params }: Props) {
   const { userId } = await auth()
   if (!userId) redirect("/sign-in")
 
+  type QuoteRow = { is_paid: boolean; insurance_segments: { name: string; icon: string } | null }
   const supabase = await createServerSupabaseClient()
   const { data: quote } = await supabase
     .from("saved_quotes")
     .select("*, insurance_segments(name, icon)")
     .eq("id", quoteId)
     .eq("user_id", userId)
-    .single()
+    .single() as { data: QuoteRow | null }
 
   if (!quote) redirect("/dashboard")
   if (quote.is_paid) redirect(`/dashboard/report/${quoteId}`)
 
-  const segment = quote.insurance_segments as { name: string; icon: string } | null
+  const segment = quote.insurance_segments
 
   const perks = [
     "Side-by-side PDF comparison of all plans",
