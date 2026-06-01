@@ -8,30 +8,23 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { Bookmark, ExternalLink, TrendingDown } from "lucide-react"
+import { ExternalLink, TrendingDown } from "lucide-react"
 import dynamic from "next/dynamic"
 
-const clerkConfigured =
-  typeof process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY === "string" &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.length > 10 &&
-  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("your_")
-
-const SaveButton = clerkConfigured
-  ? dynamic(() => import("@/components/insurance/SaveButton"), { ssr: false })
-  : null
+const SaveButton = dynamic(() => import("@/components/insurance/SaveButton"), { ssr: false })
 
 type Plan = {
   id: string
   name: string
-  monthly_premium_usd: number | null
-  reimbursement_pct: number | null
-  affiliate_url: string | null
+  monthlyPremiumUsd: number | null
+  reimbursementPct: number | null
+  affiliateUrl: string | null
   rating: number | null
-  providers: { name: string; logo_url: string | null }
-  plan_coverage_rules: Array<{
+  provider: { name: string; logoUrl: string | null }
+  coverageRules: Array<{
     covers: boolean
-    surcharge_pct: number
-    segment_dimensions: { slug: string; label: string; dimension_type: string }
+    surchargePct: number
+    dimension: { slug: string; label: string; dimensionType: string }
   }>
 }
 
@@ -62,18 +55,18 @@ function estimatePlan(
   state: string,
   activeDimensionSlug?: string
 ) {
-  const base = plan.monthly_premium_usd ?? 40
-  const reimb = (plan.reimbursement_pct ?? 80) / 100
+  const base = plan.monthlyPremiumUsd ?? 40
+  const reimb = (plan.reimbursementPct ?? 80) / 100
 
   const ageMultiplier = petAge > 9 ? 1.5 : petAge > 7 ? 1.3 : petAge > 4 ? 1.1 : 1.0
   const stateMult = getStateMultiplier(state)
 
   let surcharge = 0
   if (activeDimensionSlug) {
-    const rule = plan.plan_coverage_rules.find(
-      (r) => r.segment_dimensions.slug === activeDimensionSlug
+    const rule = plan.coverageRules.find(
+      (r) => r.dimension.slug === activeDimensionSlug
     )
-    if (rule) surcharge = rule.surcharge_pct / 100
+    if (rule) surcharge = rule.surchargePct / 100
   }
 
   const monthly = base * (1 + surcharge) * ageMultiplier * stateMult
@@ -85,8 +78,8 @@ function estimatePlan(
     netMonthly: netMonthly.toFixed(2),
     annualSavings: annualSavings.toFixed(0),
     coversCondition: activeDimensionSlug
-      ? plan.plan_coverage_rules.find(
-          (r) => r.segment_dimensions.slug === activeDimensionSlug
+      ? plan.coverageRules.find(
+          (r) => r.dimension.slug === activeDimensionSlug
         )?.covers ?? null
       : null,
   }
@@ -174,7 +167,7 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold">{plan.providers.name}</span>
+                  <span className="font-semibold">{plan.provider.name}</span>
                   {plan.rating && (
                     <Badge variant="secondary" className="text-xs">★ {plan.rating}</Badge>
                   )}
@@ -195,9 +188,9 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <span className="text-xl font-bold text-gray-900">${est.monthly}<span className="text-sm font-normal text-gray-400">/mo</span></span>
-                {plan.affiliate_url && (
+                {plan.affiliateUrl && (
                   <a
-                    href={plan.affiliate_url}
+                    href={plan.affiliateUrl}
                     target="_blank"
                     rel="noopener noreferrer nofollow"
                     className="inline-flex items-center gap-1 bg-blue-600 text-white text-sm font-medium px-3 py-2 rounded-md hover:bg-blue-700 transition-colors"
@@ -217,13 +210,7 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
         <p className="text-sm text-gray-500">
           Save this estimate to your dashboard and unlock a full PDF comparison report.
         </p>
-        {clerkConfigured && SaveButton ? (
-          <SaveButton onSave={handleSaveQuote} saving={saving} />
-        ) : (
-          <Button disabled className="shrink-0 opacity-60" title="Configure Clerk to enable saving">
-            <Bookmark className="w-4 h-4 mr-2" /> Save Estimate
-          </Button>
-        )}
+        <SaveButton onSave={handleSaveQuote} saving={saving} />
       </div>
     </div>
   )

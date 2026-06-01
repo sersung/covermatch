@@ -5,21 +5,21 @@ import { CheckCircle2, XCircle, ExternalLink, Clock, DollarSign } from "lucide-r
 type Plan = {
   id: string
   name: string
-  monthly_premium_usd: number | null
-  annual_deductible_usd: number | null
-  reimbursement_pct: number | null
-  coverage_limit_usd: number | null
-  waiting_period_days: number | null
+  monthlyPremiumUsd: number | null
+  annualDeductibleUsd: number | null
+  reimbursementPct: number | null
+  coverageLimitUsd: number | null
+  waitingPeriodDays: number | null
   rating: number | null
-  affiliate_url: string | null
+  affiliateUrl: string | null
   pros: string[] | null
   cons: string[] | null
-  providers: { name: string }
-  plan_coverage_rules: Array<{
+  provider: { name: string }
+  coverageRules: Array<{
     covers: boolean
-    surcharge_pct: number
+    surchargePct: number
     notes: string | null
-    segment_dimensions: { slug: string; label: string; dimension_type: string }
+    dimension: { slug: string; label: string; dimensionType: string }
   }>
 }
 
@@ -32,11 +32,11 @@ type Props = {
 export function ComparisonTable({ plans, filterDimensionSlug }: Props) {
   const displayPlans = filterDimensionSlug
     ? [...plans].sort((a, b) => {
-        const aCovers = a.plan_coverage_rules.find(
-          (r) => r.segment_dimensions.slug === filterDimensionSlug
+        const aCovers = a.coverageRules.find(
+          (r) => r.dimension.slug === filterDimensionSlug
         )?.covers ?? false
-        const bCovers = b.plan_coverage_rules.find(
-          (r) => r.segment_dimensions.slug === filterDimensionSlug
+        const bCovers = b.coverageRules.find(
+          (r) => r.dimension.slug === filterDimensionSlug
         )?.covers ?? false
         return (bCovers ? 1 : 0) - (aCovers ? 1 : 0) || (b.rating ?? 0) - (a.rating ?? 0)
       })
@@ -63,51 +63,46 @@ export function ComparisonTable({ plans, filterDimensionSlug }: Props) {
         <tbody className="divide-y">
           {displayPlans.map((plan, idx) => {
             const conditionRule = filterDimensionSlug
-              ? plan.plan_coverage_rules.find(
-                  (r) => r.segment_dimensions.slug === filterDimensionSlug
-                )
+              ? plan.coverageRules.find((r) => r.dimension.slug === filterDimensionSlug)
               : null
 
             return (
-              <tr
-                key={plan.id}
-                className={idx === 0 ? "bg-blue-50/50" : "hover:bg-gray-50"}
-              >
+              <tr key={plan.id} className={idx === 0 ? "bg-blue-50/50" : "hover:bg-gray-50"}>
                 <td className="px-4 py-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       {idx === 0 && <Badge className="text-xs bg-blue-600">Top Pick</Badge>}
                     </div>
-                    <div className="font-semibold text-gray-900">{plan.providers.name}</div>
+                    <div className="font-semibold text-gray-900">{plan.provider.name}</div>
                     <div className="text-xs text-gray-500">{plan.name}</div>
                   </div>
                 </td>
                 <td className="px-3 py-4 text-center font-bold text-gray-900">
-                  {plan.monthly_premium_usd
-                    ? `$${plan.monthly_premium_usd}/mo`
+                  {plan.monthlyPremiumUsd
+                    ? `$${plan.monthlyPremiumUsd}/mo`
                     : <span className="text-gray-400">Varies</span>}
-                  {conditionRule?.surcharge_pct ? (
-                    <div className="text-xs text-orange-500">+{conditionRule.surcharge_pct}% surcharge</div>
+                  {conditionRule?.surchargePct ? (
+                    <div className="text-xs text-orange-500">+{conditionRule.surchargePct}% surcharge</div>
                   ) : null}
                 </td>
                 <td className="px-3 py-4 text-center text-gray-700">
                   <div className="flex items-center justify-center gap-1">
                     <DollarSign className="w-3 h-3 text-gray-400" />
-                    {plan.annual_deductible_usd ?? "Varies"}
+                    {plan.annualDeductibleUsd ?? "Varies"}
                   </div>
                 </td>
                 <td className="px-3 py-4 text-center">
-                  <Badge variant="outline">{plan.reimbursement_pct ?? "—"}%</Badge>
+                  <Badge variant="outline">{plan.reimbursementPct ?? "—"}%</Badge>
                 </td>
                 <td className="px-3 py-4 text-center text-gray-700">
-                  {plan.coverage_limit_usd
-                    ? `$${(plan.coverage_limit_usd / 1000).toFixed(0)}k`
+                  {plan.coverageLimitUsd
+                    ? `$${(plan.coverageLimitUsd / 1000).toFixed(0)}k`
                     : <span className="text-green-600 font-medium">Unlimited</span>}
                 </td>
                 <td className="px-3 py-4 text-center">
                   <div className="flex items-center justify-center gap-1 text-gray-600">
                     <Clock className="w-3 h-3 text-gray-400" />
-                    {plan.waiting_period_days ?? "—"}d
+                    {plan.waitingPeriodDays ?? "—"}d
                   </div>
                 </td>
                 {filterDimensionSlug && (
@@ -137,9 +132,9 @@ export function ComparisonTable({ plans, filterDimensionSlug }: Props) {
                   <span className="font-semibold">★ {plan.rating?.toFixed(1) ?? "—"}</span>
                 </td>
                 <td className="px-3 py-4 text-right">
-                  {plan.affiliate_url && (
+                  {plan.affiliateUrl && (
                     <a
-                      href={plan.affiliate_url}
+                      href={plan.affiliateUrl}
                       target="_blank"
                       rel="noopener noreferrer nofollow"
                       className="inline-flex items-center gap-1 bg-blue-600 text-white text-xs font-medium px-3 py-2 rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"

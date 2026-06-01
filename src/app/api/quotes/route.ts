@@ -1,49 +1,50 @@
 import { NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+
+async function getSession() {
+  return auth.api.getSession({ headers: await headers() })
+}
 
 export async function GET() {
-  const { auth } = await import("@clerk/nextjs/server")
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase
-    .from("saved_quotes")
-    .select("*, insurance_segments(name, slug, icon)")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
+  const quotes = await prisma.savedQuote.findMany({
+    where: { userId: session.user.id },
+    orderBy: { createdAt: "desc" },
+    include: { segment: { select: { id: true, name: true, slug: true, icon: true } } },
+  })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  return NextResponse.json(quotes)
 }
 
 export async function POST(req: Request) {
-  const { auth } = await import("@clerk/nextjs/server")
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
-  const { segmentId, inputData, resultSnapshot, label } = body
+  const { segmentId, inputData, resultSnapshot, label } = body as {
+    segmentId?: string
+    inputData?: unknown
+    resultSnapshot?: unknown
+    label?: string
+  }
 
   if (!segmentId || !inputData) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
-  const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase
-    .from("saved_quotes")
-    .insert({
-      user_id: userId as string,
-      segment_id: segmentId as string,
-      input_data: inputData as import("@/lib/types/database").Json,
-      result_snapshot: (resultSnapshot ?? null) as import("@/lib/types/database").Json | null,
-      label: (label ?? null) as string | null,
-      is_paid: false,
-      stripe_session_id: null,
-    })
-    .select()
-    .single()
+  const quote = await prisma.savedQuote.create({
+    data: {
+      userId: session.user.id,
+      segmentId,
+      inputData: inputData as object,
+      resultSnapshot: resultSnapshot !== undefined ? resultSnapshot as object : undefined,
+      label: label ?? null,
+    },
+  })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+  return NextResponse.json(quote, { status: 201 })
 }

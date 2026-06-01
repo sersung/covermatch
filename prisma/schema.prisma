@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Better Auth required tables ──────────────────────────────────────────────
+
+model user {
+  id            String   @id
+  name          String
+  email         String   @unique
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime
+  updatedAt     DateTime
+
+  sessions    session[]
+  accounts    account[]
+  savedQuotes SavedQuote[]
+}
+
+model session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      user     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  user      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+}
+
+model verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime?
+  updatedAt  DateTime?
+}
+
+// ── Application tables ───────────────────────────────────────────────────────
+
+model InsuranceSegment {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  name           String
+  description    String?
+  icon           String?
+  seoTitle       String?
+  seoDescription String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now())
+
+  plans       Plan[]
+  dimensions  SegmentDimension[]
+  savedQuotes SavedQuote[]
+
+  @@map("insurance_segments")
+}
+
+model Provider {
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  logoUrl          String?
+  affiliateLink    String?
+  affiliateNetwork String?
+  commissionType   String?
+  commissionValue  Float?
+  cookieDays       Int?
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+
+  plans Plan[]
+
+  @@map("providers")
+}
+
+model Plan {
+  id                  String   @id @default(cuid())
+  providerId          String
+  segmentId           String
+  name                String
+  monthlyPremiumUsd   Float?
+  annualDeductibleUsd Float?
+  reimbursementPct    Float?
+  coverageLimitUsd    Float?
+  waitingPeriodDays   Int?
+  highlights          String[]
+  pros                String[]
+  cons                String[]
+  rating              Float?
+  affiliateUrl        String?
+  lastUpdated         DateTime @default(now()) @updatedAt
+
+  provider      Provider          @relation(fields: [providerId], references: [id])
+  segment       InsuranceSegment  @relation(fields: [segmentId], references: [id])
+  coverageRules PlanCoverageRule[]
+
+  @@map("plans")
+}
+
+model SegmentDimension {
+  id            String   @id @default(cuid())
+  segmentId     String
+  dimensionType String
+  slug          String
+  label         String
+  metadata      Json?
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  segment       InsuranceSegment  @relation(fields: [segmentId], references: [id])
+  coverageRules PlanCoverageRule[]
+
+  @@map("segment_dimensions")
+}
+
+model PlanCoverageRule {
+  id           String  @id @default(cuid())
+  planId       String
+  dimensionId  String
+  covers       Boolean @default(true)
+  surchargePct Float   @default(0)
+  notes        String?
+
+  plan      Plan             @relation(fields: [planId], references: [id])
+  dimension SegmentDimension @relation(fields: [dimensionId], references: [id])
+
+  @@map("plan_coverage_rules")
+}
+
+model SavedQuote {
+  id              String   @id @default(cuid())
+  userId          String
+  segmentId       String
+  inputData       Json
+  resultSnapshot  Json?
+  label           String?
+  isPaid          Boolean  @default(false)
+  stripeSessionId String?
+  createdAt       DateTime @default(now())
+
+  segment InsuranceSegment @relation(fields: [segmentId], references: [id])
+  user    user             @relation(fields: [userId], references: [id])
+
+  @@map("saved_quotes")
+}

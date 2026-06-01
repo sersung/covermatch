@@ -1,31 +1,28 @@
 import { redirect } from "next/navigation"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { StripeCheckoutButton } from "@/components/stripe/StripeCheckoutButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, FileText, Star } from "lucide-react"
+import { CheckCircle2, Star } from "lucide-react"
 
 type Props = { params: Promise<{ quoteId: string }> }
 
 export default async function CheckoutPage({ params }: Props) {
   const { quoteId } = await params
-  const { auth } = await import("@clerk/nextjs/server")
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session) redirect("/sign-in")
 
-  type QuoteRow = { is_paid: boolean; insurance_segments: { name: string; icon: string } | null }
-  const supabase = await createServerSupabaseClient()
-  const { data: quote } = await supabase
-    .from("saved_quotes")
-    .select("*, insurance_segments(name, icon)")
-    .eq("id", quoteId)
-    .eq("user_id", userId)
-    .single() as { data: QuoteRow | null }
+  const quote = await prisma.savedQuote.findFirst({
+    where: { id: quoteId, userId: session.user.id },
+    include: { segment: { select: { name: true, icon: true } } },
+  })
 
   if (!quote) redirect("/dashboard")
-  if (quote.is_paid) redirect(`/dashboard/report/${quoteId}`)
+  if (quote.isPaid) redirect(`/dashboard/report/${quoteId}`)
 
-  const segment = quote.insurance_segments
+  const segment = quote.segment
 
   const perks = [
     "Side-by-side PDF comparison of all plans",

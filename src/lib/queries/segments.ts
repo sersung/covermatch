@@ -1,5 +1,9 @@
-import { createAnonSupabaseClient } from "@/lib/supabase/server"
-import type { InsuranceSegment, SegmentDimension, PlanWithProvider } from "@/lib/types/database"
+import { prisma } from "@/lib/prisma"
+import type {
+  InsuranceSegment,
+  SegmentDimension,
+  PlanWithProvider,
+} from "@/lib/types/app"
 
 async function safeQuery<T>(fn: () => Promise<T | null>): Promise<T | null> {
   try {
@@ -10,95 +14,81 @@ async function safeQuery<T>(fn: () => Promise<T | null>): Promise<T | null> {
 }
 
 export async function getSegmentBySlug(slug: string): Promise<InsuranceSegment | null> {
-  return safeQuery(async () => {
-    const supabase = await createAnonSupabaseClient()
-    const { data } = await supabase
-      .from("insurance_segments")
-      .select("*")
-      .eq("slug", slug)
-      .eq("active", true)
-      .single()
-    return data
-  })
+  return safeQuery(() =>
+    prisma.insuranceSegment.findFirst({
+      where: { slug, active: true },
+    })
+  )
 }
 
-export async function getDimensionBySlug(segmentId: string, slug: string): Promise<SegmentDimension | null> {
-  return safeQuery(async () => {
-    const supabase = await createAnonSupabaseClient()
-    const { data } = await supabase
-      .from("segment_dimensions")
-      .select("*")
-      .eq("segment_id", segmentId)
-      .eq("slug", slug)
-      .single()
-    return data
-  })
+export async function getDimensionBySlug(
+  segmentId: string,
+  slug: string
+): Promise<SegmentDimension | null> {
+  return safeQuery(() =>
+    prisma.segmentDimension.findFirst({
+      where: { segmentId, slug },
+    })
+  )
 }
 
 export async function getSegmentDimensions(segmentId: string): Promise<SegmentDimension[]> {
-  const result = await safeQuery(async () => {
-    const supabase = await createAnonSupabaseClient()
-    const { data } = await supabase
-      .from("segment_dimensions")
-      .select("*")
-      .eq("segment_id", segmentId)
-      .order("label")
-    return data
-  })
+  const result = await safeQuery(() =>
+    prisma.segmentDimension.findMany({
+      where: { segmentId },
+      orderBy: { label: "asc" },
+    })
+  )
   return result ?? []
 }
 
-export async function getDimensionsByType(segmentId: string, type: string): Promise<SegmentDimension[]> {
-  const result = await safeQuery(async () => {
-    const supabase = await createAnonSupabaseClient()
-    const { data } = await supabase
-      .from("segment_dimensions")
-      .select("*")
-      .eq("segment_id", segmentId)
-      .eq("dimension_type", type)
-      .order("label")
-    return data
-  })
+export async function getDimensionsByType(
+  segmentId: string,
+  type: string
+): Promise<SegmentDimension[]> {
+  const result = await safeQuery(() =>
+    prisma.segmentDimension.findMany({
+      where: { segmentId, dimensionType: type },
+      orderBy: { label: "asc" },
+    })
+  )
   return result ?? []
 }
 
 export async function getPlansBySegment(segmentId: string): Promise<PlanWithProvider[]> {
-  const result = await safeQuery(async () => {
-    const supabase = await createAnonSupabaseClient()
-    const { data } = await supabase
-      .from("plans")
-      .select(`
-        *,
-        providers (*),
-        plan_coverage_rules (
-          *,
-          segment_dimensions (*)
-        )
-      `)
-      .eq("segment_id", segmentId)
-      .order("rating", { ascending: false })
-    return data
-  })
-  return result ?? []
+  const result = await safeQuery(() =>
+    prisma.plan.findMany({
+      where: { segmentId },
+      orderBy: { rating: "desc" },
+      include: {
+        provider: true,
+        coverageRules: {
+          include: { dimension: true },
+        },
+      },
+    })
+  )
+  return (result ?? []) as PlanWithProvider[]
 }
 
-export async function getPlansBySegmentAndDimension(segmentId: string, dimensionId: string): Promise<PlanWithProvider[]> {
-  const result = await safeQuery(async () => {
-    const supabase = await createAnonSupabaseClient()
-    const { data } = await supabase
-      .from("plans")
-      .select(`
-        *,
-        providers (*),
-        plan_coverage_rules!inner (
-          *,
-          segment_dimensions (*)
-        )
-      `)
-      .eq("segment_id", segmentId)
-      .eq("plan_coverage_rules.dimension_id", dimensionId)
-      .order("rating", { ascending: false })
-    return data
-  })
-  return result ?? []
+export async function getPlansBySegmentAndDimension(
+  segmentId: string,
+  dimensionId: string
+): Promise<PlanWithProvider[]> {
+  const result = await safeQuery(() =>
+    prisma.plan.findMany({
+      where: {
+        segmentId,
+        coverageRules: { some: { dimensionId } },
+      },
+      orderBy: { rating: "desc" },
+      include: {
+        provider: true,
+        coverageRules: {
+          include: { dimension: true },
+        },
+      },
+    })
+  )
+  return (result ?? []) as PlanWithProvider[]
 }

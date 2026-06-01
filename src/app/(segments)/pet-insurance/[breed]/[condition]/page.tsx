@@ -65,8 +65,8 @@ export default async function BreedConditionPage({ params }: Props) {
 
   // Count plans that cover this condition
   const coveringPlans = plans.filter((p) =>
-    p.plan_coverage_rules.some(
-      (r) => r.segment_dimensions.slug === conditionSlug && r.covers
+    p.coverageRules.some(
+      (r) => r.dimension.slug === conditionSlug && r.covers
     )
   )
 
@@ -89,7 +89,7 @@ export default async function BreedConditionPage({ params }: Props) {
         name: `What is the best pet insurance for ${breed.label} with ${condition.label}?`,
         acceptedAnswer: {
           "@type": "Answer",
-          text: `Based on our analysis, ${coveringPlans[0] ? (coveringPlans[0] as any).providers?.name ?? coveringPlans[0].name : "Spot Pet Insurance"} offers the best coverage for ${breed.label}s with ${condition.label}, offering reimbursement rates up to ${coveringPlans[0]?.reimbursement_pct ?? 80}%.`,
+          text: `Based on our analysis, ${coveringPlans[0] ? (coveringPlans[0] as { provider?: { name?: string }; name: string }).provider?.name ?? coveringPlans[0].name : "Spot Pet Insurance"} offers the best coverage for ${breed.label}s with ${condition.label}, offering reimbursement rates up to ${coveringPlans[0]?.reimbursementPct ?? 80}%.`,
         },
       },
     ],

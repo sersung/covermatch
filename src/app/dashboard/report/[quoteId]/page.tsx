@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { headers } from "next/headers"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle2, Star } from "lucide-react"
@@ -8,30 +10,20 @@ type Props = { params: Promise<{ quoteId: string }> }
 
 export default async function ReportPage({ params }: Props) {
   const { quoteId } = await params
-  const { auth } = await import("@clerk/nextjs/server")
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session) redirect("/sign-in")
 
-  type QuoteRow = {
-    is_paid: boolean
-    insurance_segments: { name: string; icon: string } | null
-    input_data: Record<string, unknown>
-    result_snapshot: Array<Record<string, unknown>> | null
-  }
-  const supabase = await createServerSupabaseClient()
-  const { data: quote } = await supabase
-    .from("saved_quotes")
-    .select("*, insurance_segments(name, icon)")
-    .eq("id", quoteId)
-    .eq("user_id", userId)
-    .single() as { data: QuoteRow | null }
+  const quote = await prisma.savedQuote.findFirst({
+    where: { id: quoteId, userId: session.user.id },
+    include: { segment: { select: { name: true, icon: true } } },
+  })
 
   if (!quote) redirect("/dashboard")
-  if (!quote.is_paid) redirect(`/dashboard/checkout/${quoteId}`)
+  if (!quote.isPaid) redirect(`/dashboard/checkout/${quoteId}`)
 
-  const segment = quote.insurance_segments
-  const inputData = quote.input_data
-  const results = quote.result_snapshot
+  const segment = quote.segment
+  const inputData = quote.inputData as Record<string, unknown>
+  const results = quote.resultSnapshot as Array<Record<string, unknown>> | null
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
@@ -46,7 +38,6 @@ export default async function ReportPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Inputs Summary */}
       <Card>
         <CardHeader><CardTitle className="text-lg">Your Profile</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
@@ -65,7 +56,6 @@ export default async function ReportPage({ params }: Props) {
         </CardContent>
       </Card>
 
-      {/* Results */}
       {results && results.length > 0 && (
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Plan Estimates</h2>
@@ -95,7 +85,6 @@ export default async function ReportPage({ params }: Props) {
         </div>
       )}
 
-      {/* 5-Year Cost Analysis */}
       {results && results.length > 0 && (
         <Card>
           <CardHeader><CardTitle className="text-lg">5-Year Cost Analysis</CardTitle></CardHeader>

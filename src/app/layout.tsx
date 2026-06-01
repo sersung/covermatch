@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { ClerkProvider } from "@clerk/nextjs"
 import { Toaster } from "@/components/ui/sonner"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
@@ -22,10 +21,8 @@ export const metadata: Metadata = {
   },
 }
 
-const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
-
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const content = (
+  return (
     <html lang="en" className="h-full antialiased">
       <body className={`${inter.className} min-h-full flex flex-col`}>
         <Navbar />
@@ -35,10 +32,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </body>
     </html>
   )
-
-  if (clerkPublishableKey && !clerkPublishableKey.startsWith("your_")) {
-    return <ClerkProvider>{content}</ClerkProvider>
-  }
-
-  return content
 }
