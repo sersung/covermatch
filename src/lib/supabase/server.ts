@@ -1,5 +1,4 @@
 import { createServerClient } from "@supabase/ssr"
-import { auth } from "@clerk/nextjs/server"
 import { cookies } from "next/headers"
 import { type Database } from "@/lib/types/database"
 
@@ -8,6 +7,7 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "placeholde
 
 export async function createServerSupabaseClient() {
   const cookieStore = await cookies()
+  const { auth } = await import("@clerk/nextjs/server")
   const { getToken } = await auth()
 
   return createServerClient<Database>(

@@ -1,4 +1,3 @@
-import { auth } from "@clerk/nextjs/server"
 import { redirect } from "next/navigation"
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { StripeCheckoutButton } from "@/components/stripe/StripeCheckoutButton"
@@ -10,6 +9,7 @@ type Props = { params: Promise<{ quoteId: string }> }
 
 export default async function CheckoutPage({ params }: Props) {
   const { quoteId } = await params
+  const { auth } = await import("@clerk/nextjs/server")
   const { userId } = await auth()
   if (!userId) redirect("/sign-in")
 
