@@ -47,7 +47,7 @@ export default async function LandlordInsurancePage() {
             >
               <div>
                 <div className="font-bold text-gray-900 group-hover:text-blue-700">{pt.label}</div>
-                {(pt.metadata as Record<string, unknown> | null)?.notes && (
+                {!!(pt.metadata as Record<string, unknown> | null)?.notes && (
                   <div className="text-sm text-gray-500 mt-1">{((pt.metadata as Record<string, unknown>).notes) as string}</div>
                 )}
               </div>

@@ -11,6 +11,17 @@ export async function POST(req: Request) {
   const { quoteId } = await req.json()
   if (!quoteId) return NextResponse.json({ error: "Missing quoteId" }, { status: 400 })
 
+  // Verify the quote belongs to the authenticated user before charging
+  const { createServerSupabaseClient } = await import("@/lib/supabase/server")
+  const supabase = await createServerSupabaseClient()
+  const { data: quote } = await supabase
+    .from("saved_quotes")
+    .select("id")
+    .eq("id", quoteId)
+    .eq("user_id", userId)
+    .single()
+  if (!quote) return NextResponse.json({ error: "Quote not found" }, { status: 404 })
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
   const session = await stripe.checkout.sessions.create({
