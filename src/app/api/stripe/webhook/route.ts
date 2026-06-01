@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
-import { createAnonSupabaseClient } from "@/lib/supabase/server"
+import { createClient } from "@supabase/supabase-js"
+import type { Database } from "@/lib/types/database"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-03-31.basil" })
 
 export async function POST(req: Request) {
   const body = await req.text()
-  const sig = req.headers.get("stripe-signature")!
+  const sig = req.headers.get("stripe-signature")
+  if (!sig) return NextResponse.json({ error: "Missing signature" }, { status: 400 })
 
   let event: Stripe.Event
   try {
@@ -19,7 +21,11 @@ export async function POST(req: Request) {
     const session = event.data.object as Stripe.CheckoutSession
     const quoteId = session.metadata?.quoteId
     if (quoteId) {
-      const supabase = await createAnonSupabaseClient()
+      // Service role bypasses RLS — required for webhook (no user JWT available)
+      const supabase = createClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      )
       await supabase
         .from("saved_quotes")
         .update({ is_paid: true, stripe_session_id: session.id })
