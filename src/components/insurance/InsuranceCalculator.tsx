@@ -99,7 +99,6 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
   const [saving, setSaving] = useState(false)
 
   async function handleSaveQuote() {
-    if (!isSignedIn) return
     setSaving(true)
     try {
       const res = await fetch("/api/quotes", {

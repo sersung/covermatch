@@ -47,7 +47,7 @@ export default async function LifeInsurancePage() {
             >
               <div>
                 <div className="font-bold text-gray-900 group-hover:text-blue-700">{cond.label}</div>
-                {(cond.metadata as Record<string, unknown> | null)?.notes && (
+                {!!(cond.metadata as Record<string, unknown> | null)?.notes && (
                   <div className="text-sm text-gray-500 mt-1">{((cond.metadata as Record<string, unknown>).notes) as string}</div>
                 )}
               </div>
