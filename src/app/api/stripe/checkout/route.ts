@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-03-31.basil" })
 
@@ -12,7 +13,6 @@ export async function POST(req: Request) {
   if (!quoteId) return NextResponse.json({ error: "Missing quoteId" }, { status: 400 })
 
   // Verify the quote belongs to the authenticated user before charging
-  const { createServerSupabaseClient } = await import("@/lib/supabase/server")
   const supabase = await createServerSupabaseClient()
   const { data: quote } = await supabase
     .from("saved_quotes")
