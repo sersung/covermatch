@@ -13,14 +13,10 @@ const segments = [
   { label: "Landlord", href: "/landlord-insurance" },
 ]
 
-const clerkReady =
-  typeof process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY === "string" &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.length > 10 &&
-  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("your_")
+// Dynamically import to avoid SSR issues with useSession
+const AuthNav = dynamic(() => import("@/components/layout/ClerkNavAuth"), { ssr: false })
 
-const ClerkNavAuth = dynamic(() => import("@/components/layout/ClerkNavAuth"), { ssr: false })
-
-function StaticNavAuth() {
+function NavSkeleton() {
   return (
     <>
       <Link href="/sign-in"><Button variant="ghost" size="sm">Sign In</Button></Link>
@@ -51,7 +47,7 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {clerkReady ? <ClerkNavAuth /> : <StaticNavAuth />}
+          <AuthNav fallback={<NavSkeleton />} />
         </div>
       </div>
     </header>

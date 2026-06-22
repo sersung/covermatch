@@ -1,31 +1,48 @@
 "use client"
 
 import Link from "next/link"
-import { SignInButton, SignUpButton, UserButton, useAuth } from "@clerk/nextjs"
+import { useSession, signOut } from "next-auth/react"
 import { Button } from "@/components/ui/button"
+import { User, LogOut } from "lucide-react"
 
-export default function ClerkNavAuth() {
-  const { isSignedIn } = useAuth()
+type Props = { fallback?: React.ReactNode }
 
-  if (isSignedIn) {
+export default function AuthNav({ fallback }: Props) {
+  const { data: session, status } = useSession()
+
+  if (status === "loading") {
+    return fallback ?? null
+  }
+
+  if (session?.user) {
     return (
       <>
         <Link href="/dashboard">
-          <Button variant="ghost" size="sm">My Quotes</Button>
+          <Button variant="ghost" size="sm">
+            <User className="w-4 h-4 mr-1" />
+            My Quotes
+          </Button>
         </Link>
-        <UserButton afterSignOutUrl="/" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => signOut({ callbackUrl: "/" })}
+        >
+          <LogOut className="w-4 h-4 mr-1" />
+          Sign Out
+        </Button>
       </>
     )
   }
 
   return (
     <>
-      <SignInButton mode="modal">
+      <Link href="/sign-in">
         <Button variant="ghost" size="sm">Sign In</Button>
-      </SignInButton>
-      <SignUpButton mode="modal">
+      </Link>
+      <Link href="/sign-up">
         <Button size="sm">Get Started</Button>
-      </SignUpButton>
+      </Link>
     </>
   )
 }

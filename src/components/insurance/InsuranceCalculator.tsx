@@ -11,14 +11,7 @@ import { Separator } from "@/components/ui/separator"
 import { Bookmark, ExternalLink, TrendingDown } from "lucide-react"
 import dynamic from "next/dynamic"
 
-const clerkConfigured =
-  typeof process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY === "string" &&
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.length > 10 &&
-  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("your_")
-
-const SaveButton = clerkConfigured
-  ? dynamic(() => import("@/components/insurance/SaveButton"), { ssr: false })
-  : null
+const SaveButton = dynamic(() => import("@/components/insurance/SaveButton"), { ssr: false })
 
 type Plan = {
   id: string
@@ -99,7 +92,6 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
   const [saving, setSaving] = useState(false)
 
   async function handleSaveQuote() {
-    if (!isSignedIn) return
     setSaving(true)
     try {
       const res = await fetch("/api/quotes", {
@@ -135,7 +127,7 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
           <Slider
             min={1} max={15} step={1}
             value={[petAge]}
-            onValueChange={([v]) => setPetAge(v)}
+            onValueChange={(v) => setPetAge(Array.isArray(v) ? v[0] : v)}
           />
         </div>
 
@@ -144,13 +136,13 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
           <Slider
             min={200} max={8000} step={100}
             value={[annualVetCost]}
-            onValueChange={([v]) => setAnnualVetCost(v)}
+            onValueChange={(v) => setAnnualVetCost(Array.isArray(v) ? v[0] : v)}
           />
         </div>
 
         <div className="space-y-2">
           <Label>State</Label>
-          <Select value={state} onValueChange={setState}>
+          <Select value={state} onValueChange={(v) => { if (v !== null) setState(v) }}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -218,13 +210,7 @@ export function InsuranceCalculator({ plans, segmentSlug, dimensionSlug, segment
         <p className="text-sm text-gray-500">
           Save this estimate to your dashboard and unlock a full PDF comparison report.
         </p>
-        {clerkConfigured && SaveButton ? (
-          <SaveButton onSave={handleSaveQuote} saving={saving} />
-        ) : (
-          <Button disabled className="shrink-0 opacity-60" title="Configure Clerk to enable saving">
-            <Bookmark className="w-4 h-4 mr-2" /> Save Estimate
-          </Button>
-        )}
+        <SaveButton onSave={handleSaveQuote} saving={saving} />
       </div>
     </div>
   )

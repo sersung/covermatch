@@ -61,13 +61,13 @@ export default async function TravelInsurancePage() {
                   <span className="font-bold text-gray-900 group-hover:text-blue-700">{visa.label}</span>
                   <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
                 </div>
-                {meta?.required && (
+                {!!meta?.required && (
                   <Badge className="text-xs bg-red-100 text-red-700">Insurance Required</Badge>
                 )}
-                {meta?.min_coverage_eur && (
+                {!!meta?.min_coverage_eur && (
                   <div className="text-sm text-gray-500 mt-1">Min: €{(meta.min_coverage_eur as number).toLocaleString()} coverage</div>
                 )}
-                {meta?.notes && <div className="text-xs text-gray-400 mt-1">{meta.notes as string}</div>}
+                {!!meta?.notes && <div className="text-xs text-gray-400 mt-1">{meta.notes as string}</div>}
               </Link>
             )
           })}

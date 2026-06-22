@@ -1,47 +1,38 @@
-import { auth } from "@clerk/nextjs/server"
 import { NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/db"
 
 export async function GET() {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase
-    .from("saved_quotes")
-    .select("*, insurance_segments(name, slug, icon)")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
+  const quotes = await prisma.savedQuote.findMany({
+    where: { userId: session.user.id },
+    include: { segment: { select: { name: true, slug: true, icon: true } } },
+    orderBy: { createdAt: "desc" },
+  })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data)
+  return NextResponse.json(quotes)
 }
 
 export async function POST(req: Request) {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const session = await auth()
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const body = await req.json()
-  const { segmentId, inputData, resultSnapshot, label } = body
-
+  const { segmentId, inputData, resultSnapshot, label } = await req.json()
   if (!segmentId || !inputData) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
   }
 
-  const supabase = await createServerSupabaseClient()
-  const { data, error } = await supabase
-    .from("saved_quotes")
-    .insert({
-      user_id: userId,
-      segment_id: segmentId,
-      input_data: inputData,
-      result_snapshot: resultSnapshot ?? null,
+  const quote = await prisma.savedQuote.create({
+    data: {
+      userId: session.user.id,
+      segmentId,
+      inputData,
+      resultSnapshot: resultSnapshot ?? null,
       label: label ?? null,
-      is_paid: false,
-    })
-    .select()
-    .single()
+    },
+  })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-  return NextResponse.json(data, { status: 201 })
+  return NextResponse.json(quote, { status: 201 })
 }

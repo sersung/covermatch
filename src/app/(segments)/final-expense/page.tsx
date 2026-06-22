@@ -62,10 +62,10 @@ export default async function FinalExpensePage() {
                   <span className="font-bold text-gray-900 group-hover:text-blue-700">{group.label}</span>
                   <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-blue-600" />
                 </div>
-                {meta?.avg_premium_usd && (
+                {!!meta?.avg_premium_usd && (
                   <div className="text-sm text-gray-500">Avg premium: <strong>${meta.avg_premium_usd as number}/mo</strong></div>
                 )}
-                {meta?.no_exam_available && (
+                {!!meta?.no_exam_available && (
                   <Badge className="mt-2 text-xs bg-green-100 text-green-700">No exam available</Badge>
                 )}
               </Link>

@@ -1,65 +1,59 @@
-import { auth } from "@clerk/nextjs/server"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
-import { Badge } from "@/components/ui/badge"
+import { prisma } from "@/lib/db"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, Star } from "lucide-react"
 
 type Props = { params: Promise<{ quoteId: string }> }
 
 export default async function ReportPage({ params }: Props) {
   const { quoteId } = await params
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
 
-  const supabase = await createServerSupabaseClient()
-  const { data: quote } = await supabase
-    .from("saved_quotes")
-    .select("*, insurance_segments(name, icon)")
-    .eq("id", quoteId)
-    .eq("user_id", userId)
-    .single()
+  const quote = await prisma.savedQuote.findFirst({
+    where: { id: quoteId, userId: session.user.id },
+    include: { segment: { select: { name: true, icon: true } } },
+  })
 
   if (!quote) redirect("/dashboard")
-  if (!quote.is_paid) redirect(`/dashboard/checkout/${quoteId}`)
+  if (!quote.isPaid) redirect(`/dashboard/checkout/${quoteId}`)
 
-  const segment = quote.insurance_segments as { name: string; icon: string } | null
-  const inputData = quote.input_data as Record<string, unknown>
-  const results = quote.result_snapshot as Array<Record<string, unknown>> | null
+  const inputData = quote.inputData as Record<string, unknown>
+  const results = quote.resultSnapshot as Array<Record<string, unknown>> | null
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
       <div className="flex items-center gap-3">
-        <span className="text-4xl">{segment?.icon ?? "📊"}</span>
+        <span className="text-4xl">{quote.segment?.icon ?? "📊"}</span>
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-3xl font-bold text-gray-900">Premium Insurance Report</h1>
             <Badge className="bg-yellow-500"><Star className="w-3 h-3 mr-1" />Premium</Badge>
           </div>
-          <p className="text-gray-500">{segment?.name} — Personalized Comparison</p>
+          <p className="text-gray-500">{quote.segment?.name} — Personalized Comparison</p>
         </div>
       </div>
 
-      {/* Inputs Summary */}
       <Card>
         <CardHeader><CardTitle className="text-lg">Your Profile</CardTitle></CardHeader>
         <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-          {inputData.petAge && (
+          {!!inputData.petAge && (
             <div><div className="text-gray-400">Pet Age</div><div className="font-semibold">{inputData.petAge as string} years</div></div>
           )}
-          {inputData.state && (
+          {!!inputData.state && (
             <div><div className="text-gray-400">State</div><div className="font-semibold">{inputData.state as string}</div></div>
           )}
-          {inputData.annualVetCost && (
+          {!!inputData.annualVetCost && (
             <div><div className="text-gray-400">Annual Vet Cost</div><div className="font-semibold">${(inputData.annualVetCost as number).toLocaleString()}</div></div>
           )}
-          {inputData.dimensionSlug && (
+          {!!inputData.dimensionSlug && (
             <div><div className="text-gray-400">Condition</div><div className="font-semibold capitalize">{(inputData.dimensionSlug as string).replace(/-/g, " ")}</div></div>
           )}
         </CardContent>
       </Card>
 
-      {/* Results */}
       {results && results.length > 0 && (
         <div>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Plan Estimates</h2>
@@ -78,7 +72,9 @@ export default async function ReportPage({ params }: Props) {
                       )}
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-gray-900">${r.monthly as string}<span className="text-sm font-normal text-gray-400">/mo</span></div>
+                      <div className="text-2xl font-bold text-gray-900">
+                        ${r.monthly as string}<span className="text-sm font-normal text-gray-400">/mo</span>
+                      </div>
                       <div className="text-sm text-green-600">Net: ${r.netMonthly as string}/mo after reimbursement</div>
                     </div>
                   </div>
@@ -89,7 +85,6 @@ export default async function ReportPage({ params }: Props) {
         </div>
       )}
 
-      {/* 5-Year Cost Analysis */}
       {results && results.length > 0 && (
         <Card>
           <CardHeader><CardTitle className="text-lg">5-Year Cost Analysis</CardTitle></CardHeader>

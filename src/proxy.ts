@@ -1,21 +1,8 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server"
-import { NextResponse } from "next/server"
-import type { NextRequest } from "next/server"
+import NextAuth from "next-auth"
+import { authConfig } from "@/lib/auth.config"
 
-const isProtectedRoute = createRouteMatcher(["/dashboard(.*)", "/api/quotes(.*)"])
-
-const clerkConfigured =
-  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
-  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("your_")
-
-// Next.js 16 uses named export "proxy" instead of default export "middleware"
-export const proxy = clerkConfigured
-  ? clerkMiddleware(async (auth, req) => {
-      if (isProtectedRoute(req)) {
-        await auth.protect()
-      }
-    })
-  : (_req: NextRequest) => NextResponse.next()
+// Next.js 16: named export "proxy" instead of default "middleware"
+export const { auth: proxy } = NextAuth(authConfig)
 
 export const config = {
   matcher: [

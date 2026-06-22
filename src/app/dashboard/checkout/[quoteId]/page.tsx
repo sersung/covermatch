@@ -1,30 +1,25 @@
-import { auth } from "@clerk/nextjs/server"
+import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { prisma } from "@/lib/db"
 import { StripeCheckoutButton } from "@/components/stripe/StripeCheckoutButton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, FileText, Star } from "lucide-react"
+import { CheckCircle2, Star } from "lucide-react"
 
 type Props = { params: Promise<{ quoteId: string }> }
 
 export default async function CheckoutPage({ params }: Props) {
   const { quoteId } = await params
-  const { userId } = await auth()
-  if (!userId) redirect("/sign-in")
+  const session = await auth()
+  if (!session?.user?.id) redirect("/sign-in")
 
-  const supabase = await createServerSupabaseClient()
-  const { data: quote } = await supabase
-    .from("saved_quotes")
-    .select("*, insurance_segments(name, icon)")
-    .eq("id", quoteId)
-    .eq("user_id", userId)
-    .single()
+  const quote = await prisma.savedQuote.findFirst({
+    where: { id: quoteId, userId: session.user.id },
+    include: { segment: { select: { name: true, icon: true } } },
+  })
 
   if (!quote) redirect("/dashboard")
-  if (quote.is_paid) redirect(`/dashboard/report/${quoteId}`)
-
-  const segment = quote.insurance_segments as { name: string; icon: string } | null
+  if (quote.isPaid) redirect(`/dashboard/report/${quoteId}`)
 
   const perks = [
     "Side-by-side PDF comparison of all plans",
@@ -37,10 +32,10 @@ export default async function CheckoutPage({ params }: Props) {
   return (
     <div className="max-w-2xl mx-auto px-4 py-16 space-y-8">
       <div className="text-center space-y-2">
-        <div className="text-5xl">{segment?.icon ?? "📊"}</div>
+        <div className="text-5xl">{quote.segment?.icon ?? "📊"}</div>
         <h1 className="text-3xl font-bold text-gray-900">Unlock Your Full Report</h1>
         <p className="text-gray-500">
-          Get a personalized PDF comparison report for your {segment?.name ?? "insurance"} quote.
+          Get a personalized PDF comparison report for your {quote.segment?.name ?? "insurance"} quote.
         </p>
       </div>
 

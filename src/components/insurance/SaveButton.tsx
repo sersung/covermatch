@@ -1,6 +1,7 @@
 "use client"
 
-import { useAuth, SignInButton } from "@clerk/nextjs"
+import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Bookmark, Loader2 } from "lucide-react"
 
@@ -10,22 +11,30 @@ type Props = {
 }
 
 export default function SaveButton({ onSave, saving }: Props) {
-  const { isSignedIn } = useAuth()
+  const { data: session, status } = useSession()
+  const router = useRouter()
 
-  if (isSignedIn) {
+  if (status === "loading") {
+    return (
+      <Button disabled className="shrink-0">
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading…
+      </Button>
+    )
+  }
+
+  if (session?.user) {
     return (
       <Button onClick={onSave} disabled={saving} className="shrink-0">
-        {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Bookmark className="w-4 h-4 mr-2" />}
-        {saving ? "Saving…" : "Save Estimate"}
+        {saving
+          ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</>
+          : <><Bookmark className="w-4 h-4 mr-2" /> Save Estimate</>}
       </Button>
     )
   }
 
   return (
-    <SignInButton mode="modal">
-      <Button className="shrink-0">
-        <Bookmark className="w-4 h-4 mr-2" /> Sign In to Save
-      </Button>
-    </SignInButton>
+    <Button className="shrink-0" onClick={() => router.push("/sign-in")}>
+      <Bookmark className="w-4 h-4 mr-2" /> Sign In to Save
+    </Button>
   )
 }

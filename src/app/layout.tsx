@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
-import { ClerkProvider } from "@clerk/nextjs"
+import { SessionProvider } from "next-auth/react"
+import { auth } from "@/lib/auth"
 import { Toaster } from "@/components/ui/sonner"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
@@ -22,23 +23,19 @@ export const metadata: Metadata = {
   },
 }
 
-const clerkPublishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth()
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const content = (
+  return (
     <html lang="en" className="h-full antialiased">
       <body className={`${inter.className} min-h-full flex flex-col`}>
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <Footer />
-        <Toaster />
+        <SessionProvider session={session}>
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+          <Toaster />
+        </SessionProvider>
       </body>
     </html>
   )
-
-  if (clerkPublishableKey && !clerkPublishableKey.startsWith("your_")) {
-    return <ClerkProvider>{content}</ClerkProvider>
-  }
-
-  return content
 }

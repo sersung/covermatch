@@ -52,14 +52,14 @@ export default async function TravelVisaPage({ params }: Props) {
           {meta?.notes as string ?? `Find the best travel insurance plans for ${dim.label.toLowerCase()} travelers.`}
         </p>
 
-        {meta?.min_coverage_eur && (
+        {!!meta?.min_coverage_eur && (
           <div className="rounded-xl border bg-blue-50 p-6 grid sm:grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-700">€{(meta.min_coverage_eur as number).toLocaleString()}</div>
               <div className="text-sm text-gray-600">Minimum medical coverage required</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-700">{meta.valid_countries ?? "—"}</div>
+              <div className="text-2xl font-bold text-blue-700">{(meta.valid_countries as string | number) ?? "—"}</div>
               <div className="text-sm text-gray-600">Countries covered</div>
             </div>
             <div className="text-center">
